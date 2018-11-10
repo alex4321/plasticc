@@ -1,6 +1,7 @@
 import argparse
 import math
 import io
+import pickle
 import os
 import numpy as np
 import pandas as pd
@@ -125,7 +126,8 @@ def passband_fft_features(spectrum_features):
     return data
 
 
-def extract_df_features(df, window, fname):
+def extract_df_features(pickled_df, window, fname):
+    df = pickle.loads(pickled_df)
     features = passband_fft_features(rolling_fft_df(df, 'flux', window))
     features.to_csv(fname, index=None)
     return fname
@@ -156,7 +158,7 @@ if __name__ == '__main__':
 
     signal_reader = SignalReader(args.signal_file)
     fft_features_files = Parallel(n_jobs=args.process_count)(
-        delayed(extract_df_features)(signal_reader.objects_signals(objects_ids),
+        delayed(extract_df_features)(pickle.dumps(signal_reader.objects_signals(objects_ids)),
                                      args.window,
                                      os.path.join(args.temporary_directory,
                                                   'batch-{0}.csv'.format(batch)))
