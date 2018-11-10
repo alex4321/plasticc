@@ -43,7 +43,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--signal_file')
     parser.add_argument('--meta_file')
-    parser.add_argument('--window', type=int)
     parser.add_argument('--target_file')
     parser.add_argument('--temporary_directory', default='tmp')
     parser.add_argument('--process_count', type=int)
@@ -65,7 +64,6 @@ if __name__ == '__main__':
     signal_reader = SignalReader(args.signal_file)
     fft_features_files = Parallel(n_jobs=args.process_count)(
         delayed(extract_df_features)(pickle.dumps(signal_reader.objects_signals(objects_ids)),
-                                     args.window,
                                      os.path.join(args.temporary_directory,
                                                   'batch-{0}.csv'.format(batch)))
         for batch, objects_ids in enumerate(tqdm(object_id_batches))
