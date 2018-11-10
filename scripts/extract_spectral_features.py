@@ -154,7 +154,7 @@ if __name__ == '__main__':
         batch_ids = object_ids[batch * args.batch_size:][:args.batch_size]
         object_id_batches.append(batch_ids)
 
-    signal_reader = SignalReader(args.signal_file, args.batch_size)
+    signal_reader = SignalReader(args.signal_file)
     fft_features_files = Parallel(n_jobs=args.process_count)(
         delayed(extract_df_features)(signal_reader.objects_signals(objects_ids),
                                      args.window,
