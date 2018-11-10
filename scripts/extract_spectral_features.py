@@ -9,14 +9,12 @@ from joblib import Parallel, delayed
 
 
 class SignalReader:
-    def __init__(self, fname, buffersize=5):
+    def __init__(self, fname):
         self.size = os.path.getsize(fname)
         self.file = open(fname, 'rb')
         self.header = self.file.readline()
         self.positions = {}
         self.next_objects = {}
-        self.buffersize = buffersize
-        self.buffer = {}
 
         previous_object = None
         line_num = 1
@@ -48,24 +46,14 @@ class SignalReader:
     def close(self):
         self.file.close()
 
-    def object_signal_csv(self, object_id, bufferize_next=None):
-        if bufferize_next is None:
-            if len(self.buffer) > self.buffersize:
-                self.buffer = {}
-            bufferize_next = self.buffersize
-        if object_id not in self.buffer:
-            start = self.positions[object_id]
-            end = self.positions[self.next_objects[object_id]]
-            size = end - start
-            self.file.seek(start)
-            content = self.file.read(size)
-            csv = self.header.strip() + b'\n' + content.strip()
-            self.buffer[object_id] = csv
-        if bufferize_next > 0:
-            next_id = self.next_objects[object_id]
-            if next_id != 'END':
-                self.object_signal_csv(next_id, bufferize_next - 1)
-        return self.buffer[object_id]
+    def object_signal_csv(self, object_id):
+        start = self.positions[object_id]
+        end = self.positions[self.next_objects[object_id]]
+        size = end - start
+        self.file.seek(start)
+        content = self.file.read(size)
+        csv = self.header.strip() + b'\n' + content.strip()
+        return csv
 
     def object_signal(self, object_id):
         container = io.BytesIO()
