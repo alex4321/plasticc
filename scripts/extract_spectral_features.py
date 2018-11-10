@@ -158,7 +158,8 @@ if __name__ == '__main__':
     fft_features_files = Parallel(n_jobs=args.process_count)(
         delayed(extract_df_features)(signal_reader.objects_signals(objects_ids),
                                      args.window,
-                                     os.path.join(args.temporary_directory, 'batch-{0}.csv'))
+                                     os.path.join(args.temporary_directory,
+                                                  'batch-{0}.csv'.format(batch)))
         for batch, objects_ids in enumerate(tqdm(object_id_batches))
     )
     signal_reader.close()
