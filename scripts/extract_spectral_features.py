@@ -132,6 +132,10 @@ def passband_fft_features(spectrum_features):
     return data
 
 
+def extract_df_features(df, window):
+    return passband_fft_features(rolling_fft_df(df, 'flux', window))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--signal_file')
@@ -146,7 +150,7 @@ if __name__ == '__main__':
 
     signal_reader = SignalReader(args.signal_file)
     fft_features_list = Parallel(n_jobs=args.process_count)(
-        delayed(passband_fft_features)(signal_reader.object_signal(object_id))
+        delayed(extract_df_features)(signal_reader.object_signal(object_id), args.window)
         for object_id in tqdm(object_ids)
     )
     fft_features = pd.concat(fft_features_list)
