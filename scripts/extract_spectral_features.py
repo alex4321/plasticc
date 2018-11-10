@@ -74,7 +74,7 @@ class SignalReader:
         return pd.read_csv(container)
 
     def objects_signals(self, objects_ids):
-        return pd.concat([self.object_signal(object_id) for object_id in object_ids],
+        return pd.concat([self.object_signal(object_id) for object_id in objects_ids],
                          sort=True)
 
 
