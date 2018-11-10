@@ -6,10 +6,14 @@ import pickle
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from utils import SignalReader
+import numpy as np
 
 
 def extract_df_features(pickled_df, fname):
     df = pickle.loads(pickled_df)
+    df['flux_ratio_sq'] = np.power(df['flux'] / df['flux_err'], 2.0)
+    df['flux_by_flux_ratio_sq'] = df['flux'] * df['flux_ratio_sq']
+
     aggs = {
         'mjd': ['min', 'max', 'size'],
         'passband': ['min', 'max', 'mean', 'median', 'std'],
