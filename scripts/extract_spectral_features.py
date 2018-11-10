@@ -1,4 +1,5 @@
 import argparse
+import math
 import io
 import os
 import numpy as np
@@ -72,6 +73,10 @@ class SignalReader:
         container.seek(0)
         return pd.read_csv(container)
 
+    def objects_signals(self, objects_ids):
+        return pd.concat([self.object_signal(object_id) for object_id in object_ids],
+                         sort=True)
+
 
 def rolling(signal, window):
     if len(signal) < window:
@@ -132,8 +137,10 @@ def passband_fft_features(spectrum_features):
     return data
 
 
-def extract_df_features(df, window):
-    return passband_fft_features(rolling_fft_df(df, 'flux', window))
+def extract_df_features(df, window, fname):
+    features = passband_fft_features(rolling_fft_df(df, 'flux', window))
+    features.to_csv(fname, index=None)
+    return fname
 
 
 if __name__ == '__main__':
@@ -142,18 +149,37 @@ if __name__ == '__main__':
     parser.add_argument('--meta_file')
     parser.add_argument('--window', type=int)
     parser.add_argument('--target_file')
+    parser.add_argument('--temporary_directory', default='tmp')
     parser.add_argument('--process_count', type=int)
+    parser.add_argument('--batch_size', type=int, default=1000)
     args = parser.parse_args()
 
     meta = pd.read_csv(args.meta_file)
     object_ids = meta['object_id'].unique()
 
-    signal_reader = SignalReader(args.signal_file)
-    fft_features_list = Parallel(n_jobs=args.process_count)(
-        delayed(extract_df_features)(signal_reader.object_signal(object_id), args.window)
-        for object_id in tqdm(object_ids)
+    if not os.path.exists(args.temporary_directory):
+        os.mkdir(args.temporary_directory)
+
+    object_id_batches = []
+    object_id_batch_count = int(math.ceil(len(object_ids) / float(args.batch_size)))
+    for batch in range(object_id_batch_count):
+        batch_ids = object_ids[batch * args.batch_size:][:args.batch_size]
+        object_id_batches.append(batch_ids)
+
+    signal_reader = SignalReader(args.signal_file, args.batch_size)
+    fft_features_files = Parallel(n_jobs=args.process_count)(
+        delayed(extract_df_features)(signal_reader.objects_signals(objects_ids),
+                                     args.window,
+                                     os.path.join(args.temporary_directory, 'batch-{0}.csv'))
+        for batch, objects_ids in enumerate(tqdm(object_id_batches))
     )
-    fft_features = pd.concat(fft_features_list)
     signal_reader.close()
 
-    fft_features.to_csv(args.target_file)
+    assert len(fft_features_files) > 0
+    features = pd.read_csv(fft_features_files[0])
+    for filename in tqdm(fft_features_files[1:]):
+        features = pd.concat([features, pd.read_csv(filename)],
+                             sort=True)
+        os.remove(filename)
+    features.to_csv(args.target_file, index=None)
+
