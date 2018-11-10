@@ -74,7 +74,7 @@ class SignalReader:
 
 
 def rolling(signal, window):
-    if len(signal) == window:
+    if len(signal) < window:
         return np.ones([1, window]) * signal.mean()
     shape = (signal.shape[0] - window + 1, window)
     strides = (signal.itemsize, signal.itemsize)
